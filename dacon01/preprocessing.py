@@ -1,9 +1,15 @@
 import pandas as pd
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data.dataset import Dataset
+from torch.utils import data
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import MultiLabelBinarizer
 from model_test import TestModel
+import torchnet as tnt
+from torch.autograd import Variable
+
 
 def preprocessing_basic():
     path = './data/KAERI_dataset/'
@@ -17,8 +23,8 @@ def preprocessing_basic():
 
     train_features = train_features[:,2:]
     test_features = test_features[:,2:]
-    train_features = train_features.reshape(-1, 375, 4)
-    test_features = test_features.reshape(-1, 375, 4)
+    train_features = train_features.reshape(-1, 1, 4)
+    test_features = test_features.reshape(-1, 1, 4)
     train_x = train_target[:,1]
     train_y = train_target[:,2]
     train_m = train_target[:,3]
@@ -58,16 +64,65 @@ def to_ont_hot(array):
         array[i] = array_set.index(array[i])
     return array
 
+# feature 는 index에 맞게 값이 나옴. 2800 x 375 x 4 . label 은 2800 x 1. 375 마다 label 값이 바뀌게 설정
+class DaconDataset(Dataset):
+    def __init__(self, features, labels=None):
+        self.features = features
+        self.labels = labels
+        self.len_features = len(features)
+
+    def __getitem__(self, index):
+        feature = self.features[index]
+        if self.labels is not None:
+            idx = index // 375
+            label = self.labels[idx]
+            sample = {'input': feature, 'label': label}
+        else:
+            sample = {'input': feature}
+        return sample
+
+    def __len__(self):
+        return self.len_features
+
 
 if __name__ == '__main__':
     train_feature, test_feature, x, y, m, v = preprocessing_basic()
-
+    print(train_feature.shape)
+    train_dataset_x = DaconDataset(train_feature, x)
+    batch_size = 375
+    train_loader_x = data.DataLoader(train_dataset_x, batch_size=batch_size,)
     model = TestModel()
-    model.eval()
-    print(train_feature[0].shape)
-    input = torch.tensor(train_feature[0])
-    input = torch.unsqueeze(input, 0)
-    print(input.shape)
-    print(input.size(0))
-    out = model(train_feature[0])
-    print(out)
+    model.train()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    criterion = nn.MSELoss()
+    # model.cuda()
+    epoch = 1000
+
+    for e in range(epoch):
+        acc = tnt.meter.MSEMeter()
+        meter_loss = tnt.meter.AverageValueMeter()
+
+        for batch_idx, sample in enumerate(train_loader_x):
+            features = sample["input"]
+            print(features.shape)
+            label = sample["label"]
+            # input_features_var = Variable(features.cuda())
+            # input_label_var = Variable(label[-1].cuda())
+            label = label[-1]
+
+            # output_logits = model(input_features_var)
+            output_logits, = model(features,)
+            # loss = criterion(output_logits, input_label_var)
+            loss = criterion(output_logits, label)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            meter_loss.add(loss.data[0])
+            acc.add(output_logits.data, label.data)
+
+        print(f"Epoch: {e}  , Loss: {meter_loss.value()[0]:.4f}  , Accuracy: {acc.value()[0]:.2f}")
+
+
+
