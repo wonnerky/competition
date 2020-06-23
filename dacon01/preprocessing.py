@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
+import torch
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MultiLabelBinarizer
+from model_test import TestModel
 
 def preprocessing_basic():
-    path = 'C:\\Users\\gande\\PycharmProjects\\dacon\\dacon01\\data\\KAERI_dataset\\'
+    path = './data/KAERI_dataset/'
     test_features = pd.read_csv(path + 'test_features.csv')
     train_features = pd.read_csv(path + 'train_features.csv')
     train_target = pd.read_csv(path + 'train_target.csv')
@@ -13,9 +15,10 @@ def preprocessing_basic():
     train_features = train_features.values
     train_target = train_target.values
 
-    test_features = test_features[:,2:]
     train_features = train_features[:,2:]
-    # train_features.reshape(-1,375)
+    test_features = test_features[:,2:]
+    train_features = train_features.reshape(-1, 375, 4)
+    test_features = test_features.reshape(-1, 375, 4)
     train_x = train_target[:,1]
     train_y = train_target[:,2]
     train_m = train_target[:,3]
@@ -57,7 +60,14 @@ def to_ont_hot(array):
 
 
 if __name__ == '__main__':
-    _, _, x, y, m, v = preprocessing_concat_seq()
+    train_feature, test_feature, x, y, m, v = preprocessing_basic()
 
-    x = to_ont_hot(x)
-    print(x)
+    model = TestModel()
+    model.eval()
+    print(train_feature[0].shape)
+    input = torch.tensor(train_feature[0])
+    input = torch.unsqueeze(input, 0)
+    print(input.shape)
+    print(input.size(0))
+    out = model(train_feature[0])
+    print(out)
