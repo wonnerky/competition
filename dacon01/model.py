@@ -10,11 +10,11 @@ class Model(nn.Module):
         self.lstm4 = nn.LSTM(input_size=1, hidden_size=5)
         self.fc1 = nn.Linear(4, 1)
 
-    def forward(self, inputs, ):
-        out1 = self.lstm1(inputs[0])
-        out2 = self.lstm2(inputs[1])
-        out3 = self.lstm2(inputs[2])
-        out4 = self.lstm2(inputs[3])
+    def forward(self, inputs):
+        out1, _ = self.lstm1(inputs[0])
+        out2, _ = self.lstm2(inputs[1])
+        out3, _ = self.lstm2(inputs[2])
+        out4, _ = self.lstm2(inputs[3])
         out = self.fc1(torch.cat((out1,out2,out3,out4), dim=1))
         return out
 
