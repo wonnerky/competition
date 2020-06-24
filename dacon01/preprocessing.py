@@ -88,6 +88,15 @@ class DaconDataset(Dataset):
 if __name__ == '__main__':
     train_feature, test_feature, x, y, m, v = preprocessing_basic()
     print(train_feature.shape)
+    print(x.shape)
+    for i in range(len(x)):
+        x[i] = float(x[i])
+    train_feature = train_feature.reshape(-1)
+    print(train_feature.shape)
+    for i in range(len(train_feature)):
+        train_feature[i] = float(train_feature[i])
+    train_feature = train_feature.reshape(-1,1,4)
+    print(train_feature.shape)
     train_dataset_x = DaconDataset(train_feature, x)
     batch_size = 375
     train_loader_x = data.DataLoader(train_dataset_x, batch_size=batch_size,)
