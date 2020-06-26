@@ -8,7 +8,9 @@ from torch.utils import data
 import matplotlib.pyplot as plt
 from model_test import TestModel
 import torchnet as tnt
+from tqdm import tqdm
 from torch.autograd import Variable
+
 
 
 def preprocessing_basic():
@@ -25,6 +27,8 @@ def preprocessing_basic():
     test_features = test_features[:,2:]
     train_features = train_features.reshape(-1, 1, 4)
     test_features = test_features.reshape(-1, 1, 4)
+    train_features = norm(train_features)
+    test_features = norm(test_features)
     train_x = train_target[:,1]
     train_y = train_target[:,2]
     train_m = train_target[:,3]
@@ -49,6 +53,20 @@ def preprocessing_concat_seq():
     # print(train_features)
     # print(np.array_equal(li, train_features[0]))
     return train_features, test_features, train_x, train_y, train_m, train_v
+
+def _norm(feature):
+    norm_feature = []
+    for idx, x in enumerate(feature):
+        norm_feature.append((x - np.mean(feature)) / np.var(feature))
+    return norm_feature
+
+def norm(features):
+    norm_feature = []
+    features = features.reshape(-1, 1500)
+    for i in tqdm(range(len(features))):
+        norm_feature.append(_norm(features[i]))
+    norm_feature = np.array(norm_feature)
+    return norm_feature.reshape(-1, 1, 4)
 
 
 def toString(array):
