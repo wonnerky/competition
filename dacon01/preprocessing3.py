@@ -28,9 +28,9 @@ def preprocessing_basic():
     train_features = train_features.reshape(-1, 1, 4)
     test_features = test_features.reshape(-1, 1, 4)
     print("train feature norm processing")
-    train_features = norm_feature(train_features)
+    #train_features = norm_feature(train_features)
     print("test feature norm processing")
-    test_features = norm_feature(test_features)
+    #test_features = norm_feature(test_features)
     print("label norm processing")
     train_x = norm_label(train_target[:,1])
     train_y = norm_label(train_target[:,2])
@@ -160,10 +160,12 @@ if __name__ == '__main__':
 
             print(f"Epoch: {e}  , Loss: {meter_loss.value():.4f}")   #  , Accuracy: {acc.value()[0]:.2f}")
 
+        filename = 'finalized_model'+str(e)+'.sav'
+        pickle.dump(model, open(filename, 'wb'))
+
+        torch.save(model.state_dict(),
+                   'C:\\Users\\SYM\\PycharmProjects\\competition\\dacon01\\ckpt\\finalized_model2'+str(e)+'.pth')
 
 
 
-    filename = 'finalized_model.sav'
-    pickle.dump(model, open(filename, 'wb'))
 
-    torch.save(model.state_dict(),'C:\\Users\\SYM\\PycharmProjects\\competition\\dacon01\\ckpt\\finalized_model2.pth')
