@@ -6,11 +6,11 @@ import torch.optim as optim
 from torch.utils.data.dataset import Dataset
 from torch.utils import data
 import matplotlib.pyplot as plt
-from model_test import TestModel
+from model_test3 import TestModel
 import torchnet as tnt
 from tqdm import tqdm
 from torch.autograd import Variable
-
+import pickle
 
 
 def preprocessing_basic():
@@ -27,12 +27,15 @@ def preprocessing_basic():
     test_features = test_features[:,2:]
     train_features = train_features.reshape(-1, 1, 4)
     test_features = test_features.reshape(-1, 1, 4)
-    train_features = norm(train_features)
-    test_features = norm(test_features)
-    train_x = train_target[:,1]
-    train_y = train_target[:,2]
-    train_m = train_target[:,3]
-    train_v = train_target[:,-1]
+    print("train feature norm processing")
+    train_features = norm_feature(train_features)
+    print("test feature norm processing")
+    test_features = norm_feature(test_features)
+    print("label norm processing")
+    train_x = norm_label(train_target[:,1])
+    train_y = norm_label(train_target[:,2])
+    train_m = norm_label(train_target[:,3])
+    train_v = norm_label(train_target[:,-1])
 
     return train_features, test_features, train_x, train_y, train_m, train_v
 
@@ -54,20 +57,25 @@ def preprocessing_concat_seq():
     # print(np.array_equal(li, train_features[0]))
     return train_features, test_features, train_x, train_y, train_m, train_v
 
-def _norm(feature):
+def _norm_feature(feature):
     norm_feature = []
     for idx, x in enumerate(feature):
         norm_feature.append((x - np.mean(feature)) / np.var(feature))
     return norm_feature
 
-def norm(features):
+def norm_feature(features):
     norm_feature = []
     features = features.reshape(-1, 1500)
     for i in tqdm(range(len(features))):
-        norm_feature.append(_norm(features[i]))
+        norm_feature.append(_norm_feature(features[i]))
     norm_feature = np.array(norm_feature)
     return norm_feature.reshape(-1, 1, 4)
 
+def norm_label(labels):
+    norm_labels = []
+    for idx, x in enumerate(tqdm(labels)):
+        norm_labels.append((x - np.min(labels)) / (np.max(labels) - np.min(labels)))
+    return np.array(norm_labels)
 
 def toString(array):
     array = array.tolist()
@@ -104,17 +112,13 @@ class DaconDataset(Dataset):
 
 if __name__ == '__main__':
     train_feature, test_feature, x, y, m, v = preprocessing_basic()
-    print(train_feature.shape)
-    print(x.shape)
     for i in range(len(x)):
         x[i] = float(x[i])
     train_feature = train_feature.reshape(-1)
-    print(train_feature.shape)
     for i in range(len(train_feature)):
         train_feature[i] = float(train_feature[i])
     train_feature = train_feature.reshape(-1,1,4)
-    print(train_feature.shape)
-    train_dataset_x = DaconDataset(train_feature, x)
+    train_dataset_x = DaconDataset(train_feature, labels=x)
     batch_size = 375
     train_loader_x = data.DataLoader(train_dataset_x, batch_size=batch_size,)
     model = TestModel()
@@ -126,22 +130,24 @@ if __name__ == '__main__':
 
     for e in range(epoch):
 
-        acc = tnt.meter.ClassErrorMeter(accuracy=True)
-        meter_loss = tnt.meter.AverageValueMeter()
+        # acc = tnt.meter.ClassErrorMeter(accuracy=True)
+        meter_loss = tnt.meter.MSEMeter()
 
         for batch_idx, sample in enumerate(train_loader_x):
             features = sample["input"]
             label = sample["label"]
+
             # input_features_var = Variable(features.cuda())
             # input_label_var = Variable(label[-1].cuda())
             label = label[-1]
+            label = label.unsqueeze(0).unsqueeze(0)
 
             features = Variable(features.float())
             label = Variable(label.float())
 
-
             # output_logits = model(input_features_var)
             output_logits = model(features)
+            output_logits = output_logits[-1]
             # loss = criterion(output_logits, input_label_var)
             loss = criterion(output_logits, label)
 
@@ -149,16 +155,15 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
 
-            meter_loss.add(loss.data)
-            acc.add(output_logits.data, label.data)
+            meter_loss.add(loss.data, label.data)
+            # acc.add(output_logits.data, label.data)
 
-            print(f"Epoch: {e}  , Loss: {meter_loss.value()[0]:.4f}  , Accuracy: {acc.value()[0]:.2f}")
-
-
+            print(f"Epoch: {e}  , Loss: {meter_loss.value():.4f}")   #  , Accuracy: {acc.value()[0]:.2f}")
 
 
-import pickle
-filename = 'finalized_model.sav'
-pickle.dump(model, open(filename, 'wb'))
 
-torch.save(model.state_dict(),'C:\\Users\\SYM\\PycharmProjects\\competition\\dacon01\\finalized_model2.pth')
+
+    filename = 'finalized_model.sav'
+    pickle.dump(model, open(filename, 'wb'))
+
+    torch.save(model.state_dict(),'C:\\Users\\SYM\\PycharmProjects\\competition\\dacon01\\ckpt\\finalized_model2.pth')
