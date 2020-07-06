@@ -13,8 +13,8 @@ from torch.autograd import Variable
 import pickle
 
 
-def preprocessing_basic():
-    path = './data/KAERI_dataset/'
+def preprocessing_basic(file_path):
+    path = file_path
     test_features = pd.read_csv(path + 'test_features.csv')
     train_features = pd.read_csv(path + 'train_features.csv')
     train_target = pd.read_csv(path + 'train_target.csv')
