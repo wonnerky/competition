@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import torch
+import torch, os
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data.dataset import Dataset
@@ -13,7 +13,7 @@ from torch.autograd import Variable
 import pickle
 
 
-def preprocessing_basic(file_path):
+def preprocessing_basic(file_path, isFeatrue=True, isLabel=True):
     path = file_path
     test_features = pd.read_csv(path + 'test_features.csv')
     train_features = pd.read_csv(path + 'train_features.csv')
@@ -27,17 +27,81 @@ def preprocessing_basic(file_path):
     test_features = test_features[:,2:]
     train_features = train_features.reshape(-1, 1, 4)
     test_features = test_features.reshape(-1, 1, 4)
-    print("train feature norm processing")
-    #train_features = norm_feature(train_features)
-    print("test feature norm processing")
-    #test_features = norm_feature(test_features)
-    print("label norm processing")
-    train_x = norm_label(train_target[:,1])
-    train_y = norm_label(train_target[:,2])
-    train_m = norm_label(train_target[:,3])
-    train_v = norm_label(train_target[:,-1])
+    if isFeatrue:
+        file_name = "norm_train_features.txt"
+        if os.path.isfile(file_path + 'norm_train_features.txt'):
+            train_features = pickle_load(file_path, file_name)
+            print("train feature data load complete")
+        else:
+            print("train feature norm processing")
+            train_features = norm_feature(train_features)
+            pickle_save(file_path, file_name, train_features)
+            print("save norm train feature complete")
+        file_name = "norm_test_features.txt"
+        if os.path.isfile(f'{file_path}{file_name}'):
+            test_features = pickle_load(file_path, file_name)
+            print("test feature data load complete")
+        else:
+            print("test feature norm processing")
+            test_features = norm_feature(test_features)
+            pickle_save(file_path, file_name, test_features)
+            print("save norm test feature complete")
+
+    train_x = train_target[:,1]
+    train_y = train_target[:,2]
+    train_m = train_target[:,3]
+    train_v = train_target[:,-1]
+    if isLabel:
+        file_name = "norm_label_x.txt"
+        if os.path.isfile(f'{file_path}{file_name}'):
+            train_x = pickle_load(file_path, file_name)
+            print("label x data load complete")
+        else:
+            print("label x norm processing")
+            train_x = norm_label(train_x)
+            pickle_save(file_path, file_name, train_x)
+            print("save norm label x complete")
+        file_name = "norm_label_y.txt"
+        if os.path.isfile(f'{file_path}{file_name}'):
+            train_y = pickle_load(file_path, file_name)
+            print("label y data load complete")
+        else:
+            print("label y norm processing")
+            train_y = norm_label(train_y)
+            pickle_save(file_path, file_name, train_y)
+            print("save norm label y complete")
+        file_name = "norm_label_m.txt"
+        if os.path.isfile(f'{file_path}{file_name}'):
+            train_m = pickle_load(file_path, file_name)
+            print("label m data load complete")
+        else:
+            print("label m norm processing")
+            train_m = norm_label(train_m)
+            pickle_save(file_path, file_name, train_m)
+            print("save norm label m complete")
+        file_name = "norm_label_v.txt"
+        if os.path.isfile(f'{file_path}{file_name}'):
+            train_v = pickle_load(file_path, file_name)
+            print("label v data load complete")
+        else:
+            print("label v norm processing")
+            train_v = norm_label(train_v)
+            pickle_save(file_path, file_name, train_v)
+            print("save norm label v complete")
 
     return train_features, test_features, train_x, train_y, train_m, train_v
+
+
+def pickle_load(file_path, file_name):
+    with open(f'{file_path}{file_name}', 'rb') as f:
+        data = pickle.load(f)
+    return data
+
+
+def pickle_save(file_path, file_name, data):
+    with open(f'{file_path}{file_name}', 'wb') as f:
+        pickle.dump(data, f)
+
 
 def preprocessing_concat_seq():
     train_features, test_features, train_x, train_y, train_m, train_v = preprocessing_basic()
