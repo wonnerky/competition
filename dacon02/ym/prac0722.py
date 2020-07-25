@@ -71,6 +71,7 @@ y_data = y_data.values
 # Feature, Label Shape을 확인합니다.
 print(x_data.shape, y_data.shape)
 
+exit()
 input_shape = (x_data.shape[1], x_data.shape[2])
 output_size = len(y_labels)
 

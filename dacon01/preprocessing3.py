@@ -127,6 +127,14 @@ def _norm_feature(feature):
         norm_feature.append((x - np.mean(feature)) / np.var(feature))
     return norm_feature
 
+def get_min_max(labels):
+    return np.max(labels), np.min(labels)
+
+
+def norm_to_val(output, max, min):
+    result = (output * (max - min)) + min
+    return result
+
 def norm_feature(features):
     norm_feature = []
     features = features.reshape(-1, 1500)
